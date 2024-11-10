@@ -28,6 +28,9 @@ void refresh_priority(void);
 bool cmp_wakeup_ticks(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
 bool thread_compare_priority(struct list_elem *a, struct list_elem *b, void *aux UNUSED);
 
+// recent_cpu업데이트 해주는 함수 작성
+void thread_set_recent_cpu(void);
+
 /* States in a thread's life cycle. */
 enum thread_status
 {
@@ -115,6 +118,7 @@ struct thread
 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem; /* List element. */
+	struct list_elem all_elem;
 
 	// donation을 위한 필드들 선언
 	int init_priority;
@@ -122,9 +126,9 @@ struct thread
 	struct list donations;
 	struct list_elem donation_elem;
 
-	// // MLFQS를 위한 필드를 선언
-	// int nice;
-	// int recent_cpu;
+	// MLFQS를 위한 필드를 선언
+	int nice;
+	int recent_cpu;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

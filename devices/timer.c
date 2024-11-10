@@ -132,11 +132,16 @@ timer_interrupt(struct intr_frame *args UNUSED)
 {
 	ticks++;
 	thread_tick();
-	// // 글로벌 틱의 값이 100의 배수일 경우 recent_cpu값 조정
-	// if (timer_ticks() % TIMER_FREQ == 0)
+	// 글로벌 틱의 값이 100의 배수일 경우 recent_cpu값 조정
+	if (timer_ticks() % TIMER_FREQ == 0)
+	{
+		thread_set_recent_cpu();
+	}
+
+	// 4tick마다 모든 스레드의 우선순위를 갱신해줘야함
+	// if (timer_ticks() % 4 == 0)
 	// {
-	// 	decay = (2 * );
-	// 	thread_current()->recent_cpu =
+	// 	thread_set_priority();
 	// }
 	thread_awake(ticks);
 }
