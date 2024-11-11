@@ -1,8 +1,5 @@
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
-#define NICE_DEFAULT 0
-#define RECENT_CPU_DEFAULT 0
-#define LOAD_AVG_DEFAULT 0
 
 #include <debug.h>
 #include <list.h>
@@ -11,25 +8,6 @@
 #ifdef VM
 #include "vm/vm.h"
 #endif
-struct list_elem all_elem;
-
-void thread_sleep(int64_t ticks);
-void thread_awake(int64_t ticks);
-
-void thread_init(void);
-void thread_start(void);
-
-void thread_tick(void);
-void thread_print_stats(void);
-
-void donate_priority(void);
-void refresh_priority(void);
-
-bool cmp_wakeup_ticks(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);
-bool thread_compare_priority(struct list_elem *a, struct list_elem *b, void *aux UNUSED);
-
-// recent_cpu업데이트 해주는 함수 작성
-void thread_set_recent_cpu(void);
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -49,6 +27,10 @@ typedef int tid_t;
 #define PRI_MIN 0	   /* Lowest priority. */
 #define PRI_DEFAULT 31 /* Default priority. */
 #define PRI_MAX 63	   /* Highest priority. */
+
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
 
 /* A kernel thread or user process.
  *
@@ -113,22 +95,23 @@ struct thread
 	tid_t tid;				   /* Thread identifier. */
 	enum thread_status status; /* Thread state. */
 	char name[16];			   /* Name (for debugging purposes). */
-	int priority;			   /* Priority. */
-	int64_t wakeup_tick;	   /* 깨어날 시간을 쓰레드에 추가*/
+
+	int64_t wakeup;
+
+	int priority; /* Priority. */
+
+	int init_priority;				// 스레드의 원래 우선순위 저장
+	struct list donations;			// 이 스레드에게 우선순위를 기부한 스레드들의 리스트
+	struct list_elem donation_elem; // donations 리스트에 사용될 리스트 요소
+	struct lock *wait_on_lock;		// 스레드가 현재 대기 중인 lock의 주소
+
+	int nice;
+	int recent_cpu;
 
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem; /* List element. */
-	struct list_elem all_elem;
 
-	// donation을 위한 필드들 선언
-	int init_priority;
-	struct lock *wait_on_lock;
-	struct list donations;
-	struct list_elem donation_elem;
-
-	// MLFQS를 위한 필드를 선언
-	int nice;
-	int recent_cpu;
+	struct list_elem allelem; /* List element. */
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -171,13 +154,21 @@ void thread_yield(void);
 int thread_get_priority(void);
 void thread_set_priority(int);
 
-void thread_test_preemption(void);
-
 int thread_get_nice(void);
 void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
 void do_iret(struct intr_frame *tf);
+
+// custom
+void thread_sleep(int64_t ticks);
+void thread_awake(int64_t ticks);
+
+bool thread_priority_compare(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool thread_compare_donate_priority(const struct list_elem *l, const struct list_elem *s, void *aux UNUSED);
+void donate_priority(void);
+void remove_with_lock(struct lock *lock);
+void refresh_priority(void);
 
 #endif /* threads/thread.h */
